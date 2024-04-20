@@ -6,7 +6,12 @@ import { Log } from "./components/Log";
 import { WINNING_COMBINATIONS } from "./winning-combinations";
 import { GameOver } from "./components/GameOver";
 
-const initialGameBoard = [
+const PLAYERS = {
+  X: "Player 1",
+  O: "Player 2",
+};
+
+const INITIAL_GAME_BOARD = [
   [null, null, null],
   [null, null, null],
   [null, null, null],
@@ -19,22 +24,23 @@ function deriveActivePlayer(gameTurns) {
     currentPlayer = "O";
   }
   return currentPlayer;
-}
+};
 
-export default function App() {
-  const [gameTurns, setGameTurns] = useState([]);
-
-  const activePlayer = deriveActivePlayer(gameTurns);
-
-  let gameBoard = initialGameBoard;
+function deriveGameBoard(gameTurns) {
+  //* Arrays and objects are reference values(stored in memory), if we're using them we're always editing the same object in memory. After restarting the game, the array is not reset
+  // The solution: we need to create a copy of the initialGameBoard
+  let gameBoard = [...INITIAL_GAME_BOARD.map((array) => [...array])];
 
   for (const turn of gameTurns) {
     const { square, player } = turn;
     const { row, col } = square;
 
     gameBoard[row][col] = player;
-  }
+  };
+  return gameBoard;
+};
 
+function deriveWinner(gameBoard, players) {
   let winner = null;
 
   // Winning combinations selecting to have a winner
@@ -52,9 +58,20 @@ export default function App() {
       firstSquareSymbol === secondSquareSymbol &&
       firstSquareSymbol === thirdSquareSymbol
     ) {
-      winner = firstSquareSymbol;
+      // Get the name of the player; in firstSquareSymbol is stored the symbol
+      winner = players[firstSquareSymbol];
     }
   }
+  return winner;
+};
+
+export default function App() {
+  const [gameTurns, setGameTurns] = useState([]);
+  const [players, setPlayers] = useState(PLAYERS);
+
+  const activePlayer = deriveActivePlayer(gameTurns);
+  const gameBoard = deriveGameBoard(gameTurns);
+  const winner = deriveWinner(gameBoard, players);
 
   // The game to start again if we dont have a winner
   const hasDraw = gameTurns.length === 9 && !winner;
@@ -72,24 +89,42 @@ export default function App() {
 
       return updatedTurns;
     });
-  }
+  };
+
+  // For the rematch, the array is empty again and the game starts again
+  function handleRestart() {
+    setGameTurns([]);
+  };
+
+  function handlePlayerNameChange(symbol, newName) {
+    setPlayers((prevPlayers) => {
+      return {
+        ...prevPlayers,
+        [symbol]: newName,
+      };
+    });
+  };
 
   return (
     <main>
       <div id="game-container">
         <ol id="players" className="highlight-player">
           <Player
-            initialName="Player 1"
+            initialName={PLAYERS.X}
             symbol="X"
             isActive={activePlayer === "X"}
+            onChangeName={handlePlayerNameChange}
           />
           <Player
-            initialName="Player 2"
+            initialName={PLAYERS.O}
             symbol="O"
             isActive={activePlayer === "O"}
+            onChangeName={handlePlayerNameChange}
           />
         </ol>
-        {(winner || hasDraw) && <GameOver winner={winner} />}
+        {(winner || hasDraw) && (
+          <GameOver winner={winner} onRestart={handleRestart} />
+        )}
         <GameBoard onSelectSquare={handleSelectSquare} board={gameBoard} />
       </div>
       <Log turns={gameTurns} />
