@@ -1,26 +1,34 @@
+import { useState } from "react";
+
 import { Player } from "./components/Player";
 import { GameBoard } from "./components/GameBoard";
-import { useState } from "react";
 import { Log } from "./components/Log";
+import { WINNING_COMBINATIONS } from "./winning-combinations";
+
+function deriveActivePlayer(gameTurns) {
+  let currentPlayer = "X";
+
+  if (gameTurns.length > 0 && gameTurns[0].player === "X") {
+    currentPlayer = "O";
+  }
+  return currentPlayer;
+}
 
 export default function App() {
-  const [activePlayer, setActivePlayer] = useState("X");
   const [gameTurns, setGameTurns] = useState([]);
+  // const [activePlayer, setActivePlayer] = useState("X");
+
+  const activePlayer = deriveActivePlayer(gameTurns);
 
   function handleSelectSquare(rowIndex, colIndex) {
-    setActivePlayer((currActivePlayer) =>
-      currActivePlayer === "X" ? "O" : "X"
-    );
     setGameTurns((prevTurns) => {
-      let currentPlayer = "X";
+      const currentPlayer = deriveActivePlayer(prevTurns);
 
-      if(prevTurns.length > 0 && prevTurns[0].player === "X") {
-        currentPlayer = "O";
-      };
-
+      //*info that 'turn' have; using in Log component
+      // Create an updated list of turns with the new turn added to the beginning
       const updatedTurns = [
         { square: { row: rowIndex, col: colIndex }, player: currentPlayer },
-        ...prevTurns,
+        ...prevTurns, // Add previous turns after the new turn
       ];
 
       return updatedTurns;
@@ -42,12 +50,9 @@ export default function App() {
             isActive={activePlayer === "O"}
           />
         </ol>
-        <GameBoard
-          onSelectSquare={handleSelectSquare}
-          turns={gameTurns}
-        />
+        <GameBoard onSelectSquare={handleSelectSquare} turns={gameTurns} />
       </div>
-      <Log />
+      <Log turns={gameTurns} />
     </main>
   );
 }
